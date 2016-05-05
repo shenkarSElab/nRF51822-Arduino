@@ -31,9 +31,12 @@ void scanCallBack(const Gap::AdvertisementCallbackParams_t *params)
 
   uint8_t len;
   uint8_t adv_name[31];
-  if ( NRF_SUCCESS == ble_advdata_decode(BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME, params->advertisingDataLen, (uint8_t *)params->advertisingData, &len, adv_name) )
+  if ( NRF_SUCCESS == ble_advdata_decode(BLE_GAP_AD_TYPE_SHORT_LOCAL_NAME, params->advertisingDataLen, (uint8_t *)params->advertisingData, &len, adv_name) )
     Serial.println((const char *)adv_name);
-
+  else if ( NRF_SUCCESS == ble_advdata_decode(BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME, params->advertisingDataLen, (uint8_t *)params->advertisingData, &len, adv_name) )
+    Serial.println((const char *)adv_name);
+  else
+    Serial.println("no valid name");
 }
 
 void setup()
