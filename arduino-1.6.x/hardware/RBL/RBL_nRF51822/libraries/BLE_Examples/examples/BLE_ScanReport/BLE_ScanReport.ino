@@ -24,42 +24,16 @@ uint32_t ble_advdata_decode(uint8_t type, uint8_t advdata_len, uint8_t *p_advdat
 
 void scanCallBack(const Gap::AdvertisementCallbackParams_t *params)
 {
-  /*
-    Serial.println("Scan Device CallBack Handle ");
-
-     Serial.print("  The peerAddr : ");
-     for(uint8_t index=0; index<6; index++)
-     {
-         Serial.print(params->peerAddr[index], HEX);
-         Serial.print(" ");
-     }
-     Serial.println(" ");
-     Serial.print("  The Rssi : ");
-  */
+  Serial.print(millis());
+  Serial.print("|");
   Serial.print(params->rssi, DEC);
+  Serial.print("|");
 
   uint8_t len;
   uint8_t adv_name[31];
-  /*
-    if( NRF_SUCCESS == ble_advdata_decode(BLE_GAP_AD_TYPE_SHORT_LOCAL_NAME, params->advertisingDataLen, (uint8_t *)params->advertisingData, &len, adv_name) )
-    {
-      Serial.print("  The length of Short Local Name : ");
-      Serial.println(len, HEX);
-      Serial.print("  The Short Local Name is        : ");
-      Serial.println((const char *)adv_name);
-    }
-    else
-  */
-  Serial.print("|");
   if ( NRF_SUCCESS == ble_advdata_decode(BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME, params->advertisingDataLen, (uint8_t *)params->advertisingData, &len, adv_name) )
-  {
-    // Serial.print("  The length of Complete Local Name : ");
-    // Serial.println(len, HEX);
-    // Serial.print("  The Complete Local Name is        : ");
     Serial.println((const char *)adv_name);
-  }
-//  Serial.println(" ");
-//  Serial.println(" ");
+
 }
 
 void setup()
@@ -67,6 +41,7 @@ void setup()
   // put your setup code here, to run once:
   Serial.begin(9600);
   Serial.println("Start...");
+  Serial.println("millis() | RSSI | name");
   ble.init();
   //Note : take care of scheduler, prevent ram leak.See projectconfig.h
   ble.startScan(scanCallBack);
