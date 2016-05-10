@@ -4,63 +4,32 @@
 #include <BLE_API.h>
 BLE           ble;
 
-
-const int numReadings = 5;
-
-int readings[numReadings];      // the readings from the analog input
-int readIndex = 0;              // the index of the current reading
-int total = 0;                  // the running total
-int average = 0;                // the average
-
 void scanCallBack(const Gap::AdvertisementCallbackParams_t *params)
 {
-  int rawRssi = params->rssi;
-  rawRssi = abs(rawRssi);
 
-  if (rawRssi < 90) { //remove spikes
-    total = total - readings[readIndex];
-    readings[readIndex] = rawRssi;
-    total = total + readings[readIndex];
-    readIndex = readIndex + 1;
+  int rawRssi = abs(params->rssi);
+  Serial.print(rawRssi, DEC);
+  Serial.print("|");
 
-    if (readIndex >= numReadings)
-      readIndex = 0;
+  uint8_t len;
+  uint8_t adv_name[31];
+  if ( NRF_SUCCESS == ble_advdata_decode(BLE_GAP_AD_TYPE_SHORT_LOCAL_NAME, params->advertisingDataLen, (uint8_t *)params->advertisingData, &len, adv_name) )
+    Serial.print((const char *)adv_name);
+  else if ( NRF_SUCCESS == ble_advdata_decode(BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME, params->advertisingDataLen, (uint8_t *)params->advertisingData, &len, adv_name) )
+    Serial.print((const char *)adv_name);
+  else
+    Serial.print("no valid name");
 
-    average = total / numReadings;
-    //Serial.print(rawRssi, DEC); Serial.print(" | ");
-    Serial.println(average, DEC);
-  }
-  /*
-    Serial.print(millis());
-    Serial.print("|");
-    int rawRssi = params->rssi;
-    Serial.print(abs(rawRssi), DEC);
-    Serial.print("|");
-
-    uint8_t len;
-    uint8_t adv_name[31];
-    if ( NRF_SUCCESS == ble_advdata_decode(BLE_GAP_AD_TYPE_SHORT_LOCAL_NAME, params->advertisingDataLen, (uint8_t *)params->advertisingData, &len, adv_name) )
-    Serial.println((const char *)adv_name);
-    else if ( NRF_SUCCESS == ble_advdata_decode(BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME, params->advertisingDataLen, (uint8_t *)params->advertisingData, &len, adv_name) )
-    Serial.println((const char *)adv_name);
-    else
-    Serial.println("no valid name");
-  */
+  Serial.println("");
 }
 
 void setup()
 {
-  // put your setup code here, to run once:
   Serial.begin(9600);
 
-  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-    readings[thisReading] = 0;
-  }
-
-  Serial.println("Start...");
-  Serial.println("millis() | RSSI | name");
+  //Serial.println("Start...");
+  //Serial.println("millis() | RSSI | name");
   ble.init();
-  //Note : take care of scheduler, prevent ram leak.See projectconfig.h
   ble.startScan(scanCallBack);
 }
 

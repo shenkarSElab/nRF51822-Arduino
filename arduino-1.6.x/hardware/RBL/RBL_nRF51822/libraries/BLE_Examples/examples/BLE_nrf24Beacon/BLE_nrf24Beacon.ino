@@ -178,11 +178,11 @@ void loop() {
         
         buf[L++] = 6;   // length of the name, including type byte
         buf[L++] = 0x08;
-        buf[L++] = 'n';
-        buf[L++] = 'R';
-        buf[L++] = 'F';
+        buf[L++] = '0';
+        buf[L++] = '0';
+        buf[L++] = '0';
+        buf[L++] = '0';
         buf[L++] = '2';
-        buf[L++] = '4';
 
         
         buf[L++] = 3;   // length of custom data, including type byte
