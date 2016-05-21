@@ -1,17 +1,22 @@
 //http://doc.lijun.li/misc-nrf24-ble.html
 // Inspired by http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery
 
+
+//make sure to change the MAC (dont go to the end, change at middle?!)
+// and the name
+
+
 #include "SPI.h"  // SPI in Arduino Uno/Nano: MOSI pin 11, MISO pin 12, SCK pin 13
 #define PIN_CE  10 // chip enable
 #define PIN_CSN 9   // chip select (for SPI)
 
 // The MAC address of BLE advertizer -- just make one up
 #define MY_MAC_0  0x11
-#define MY_MAC_1  0x22
-#define MY_MAC_2  0x33
-#define MY_MAC_3  0x44
-#define MY_MAC_4  0x55
-#define MY_MAC_5  0x66
+#define MY_MAC_1  0x12
+#define MY_MAC_2  0x22
+#define MY_MAC_3  0x54
+#define MY_MAC_4  0x51
+#define MY_MAC_5  0x17
 
 uint8_t buf[32];   
 static const uint8_t chRf[] = {2, 26,80};

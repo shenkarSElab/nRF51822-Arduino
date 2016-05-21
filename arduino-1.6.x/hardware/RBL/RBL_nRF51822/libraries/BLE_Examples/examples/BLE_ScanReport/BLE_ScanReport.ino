@@ -18,9 +18,9 @@ void scanCallBack(const Gap::AdvertisementCallbackParams_t *params)
   else if ( NRF_SUCCESS == ble_advdata_decode(BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME, params->advertisingDataLen, (uint8_t *)params->advertisingData, &len, adv_name) )
     Serial.print((const char *)adv_name);
   else
-    Serial.print("no valid name");
+    Serial.print("999"); //no valid name");
 
-  Serial.println("");
+  Serial.println("#");
 }
 
 void setup()
