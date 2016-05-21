@@ -11,12 +11,12 @@
 #define PIN_CSN 9   // chip select (for SPI)
 
 // The MAC address of BLE advertizer -- just make one up
-#define MY_MAC_0  0x11
+#define MY_MAC_0  0xa1
 #define MY_MAC_1  0x12
-#define MY_MAC_2  0x22
-#define MY_MAC_3  0x54
-#define MY_MAC_4  0x51
-#define MY_MAC_5  0x17
+#define MY_MAC_2  0x25
+#define MY_MAC_3  0x5d
+#define MY_MAC_4  0x55
+#define MY_MAC_5  0xf7
 
 uint8_t buf[32];   
 static const uint8_t chRf[] = {2, 26,80};
