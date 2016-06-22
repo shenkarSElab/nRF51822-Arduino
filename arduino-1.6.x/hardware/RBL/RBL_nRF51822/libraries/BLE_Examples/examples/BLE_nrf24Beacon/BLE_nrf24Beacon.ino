@@ -18,7 +18,7 @@
 #define MY_MAC_4  0x55
 #define MY_MAC_5  0xf7
 
-#define my_num   2
+#define my_num   '2'
 
 #include "funcs.h" ///all NRF functions 
 
