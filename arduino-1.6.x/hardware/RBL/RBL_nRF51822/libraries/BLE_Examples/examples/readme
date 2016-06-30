@@ -1,0 +1,38 @@
+using redBear and nrf24 based beacons for proximity detetcion derived from RSSI signal
+
+
+BLE_ScanReport[1] sits on the Readbear module. 
+Readbears job is to scan beacons and pass them on.  
+its connected over serial (TX only) to a nano running BLE_ScanReport-nano[2], which does little but handle the RSSI distance estimation code.  
+
+the other nano bitbangs the nrf24, BLE_nrf24Beacon code[3], which has its own pcb[5] :)
+
+
+it might be better to merge to one nano, seems possible.
+
+code can be found on our fork[4], 
+but its best to install the main branch if you are going to reflash the redBear
+
+
+
+
+
+# RSSI
+## understanding RSSI
+http://blog.bluetooth.com/proximity-and-rssi/
+
+## RSSI
+https://en.wikipedia.org/wiki/Mode_(statistics)
+http://forum.arduino.cc/index.php?topic=60560.0
+
+
+[1] https://github.com/shenkarSElab/nRF51822-Arduino/tree/S130/arduino-1.6.x/hardware/RBL/RBL_nRF51822/libraries/BLE_Examples/examples/BLE_ScanReport
+
+[2] https://github.com/shenkarSElab/nRF51822-Arduino/tree/S130/arduino-1.6.x/hardware/RBL/RBL_nRF51822/libraries/BLE_Examples/examples/BLE_ScanReport-nano
+
+[3]
+https://github.com/shenkarSElab/nRF51822-Arduino/tree/S130/arduino-1.6.x/hardware/RBL/RBL_nRF51822/libraries/BLE_Examples/examples/BLE_nrf24Beacon
+
+[4] https://github.com/shenkarSElab/nRF51822-Arduino/tree/S130/arduino-1.6.x/hardware/RBL/RBL_nRF51822/libraries/BLE_Examples/examples
+
+[5] https://github.com/shenkarSElab/nano24rf
