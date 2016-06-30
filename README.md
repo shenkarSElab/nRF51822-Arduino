@@ -1,8 +1,7 @@
 
 nRF51822-Arduino
 ================
-we used this as starting point for a small RSSI based proximity beacon estimation,  
-[work is here](https://github.com/shenkarSElab/nRF51822-Arduino/tree/S130/arduino-1.6.x/hardware/RBL/RBL_nRF51822/libraries/BLE_Examples/examples)
+**we used this as starting point for a small RSSI based proximity beacon estimation** [work is here](https://github.com/shenkarSElab/nRF51822-Arduino/tree/S130/arduino-1.6.x/hardware/RBL/RBL_nRF51822/libraries/BLE_Examples/examples)
 
 This branch is to provide BLE concurrent Central and Peripheral using Nordic SoftDevice S130. This is a work in progress which adds support for Arduino IDE to allow compiling nRF51822 firmware for fast prototyping and learning how BLE works.
 
