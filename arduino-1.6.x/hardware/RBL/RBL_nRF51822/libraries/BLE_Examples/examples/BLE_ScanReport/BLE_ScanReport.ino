@@ -27,8 +27,8 @@ void setup()
 {
   Serial.begin(9600);
 
-  //Serial.println("Start...");
-  //Serial.println("millis() | RSSI | name");
+  Serial.println("Start...");
+  Serial.println("millis() | RSSI | name");
   ble.init();
   ble.startScan(scanCallBack);
 }

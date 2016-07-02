@@ -1,7 +1,7 @@
 using redBear and nrf24 based beacons for proximity detetcion derived from RSSI signal
 
 
-BLE_ScanReport[1] sits on the Readbear module. 
+BLE_ScanReport[1] sits on the Readbear[6] module, its running an arduino syntex firmware [7]. 
 Readbears job is to scan beacons and pass them on.  
 its connected over serial (TX only) to a nano running BLE_ScanReport-nano[2], which does little but handle the RSSI distance estimation code.  
 
@@ -36,3 +36,7 @@ https://github.com/shenkarSElab/nRF51822-Arduino/tree/S130/arduino-1.6.x/hardwar
 [4] https://github.com/shenkarSElab/nRF51822-Arduino/tree/S130/arduino-1.6.x/hardware/RBL/RBL_nRF51822/libraries/BLE_Examples/examples
 
 [5] https://github.com/shenkarSElab/nano24rf
+
+[6] https://developer.mbed.org/platforms/RedBearLab-BLE-Nano/
+
+[7] https://github.com/RedBearLab/nRF51822-Arduino
