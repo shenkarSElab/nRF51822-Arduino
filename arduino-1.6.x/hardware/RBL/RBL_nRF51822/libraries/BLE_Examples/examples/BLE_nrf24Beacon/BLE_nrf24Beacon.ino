@@ -4,7 +4,7 @@
 #define DEBUG 1
 
 //this is the ID the beacon will transmit, keep it a number
-int my_num = 2 ;
+const static int my_num = 1 ;
 
 // The MAC address of BLE advertizer -- just make one up
 #define MY_MAC_0  0xa1
@@ -17,6 +17,7 @@ int my_num = 2 ;
 #include "SPI.h"  // SPI in Arduino Uno/Nano: MOSI pin 11, MISO pin 12, SCK pin 13
 #define PIN_CE  10 // chip enable
 #define PIN_CSN 9   // chip select (for SPI)
+
 
 
 #include "SoftwareSerial.h"
@@ -42,17 +43,13 @@ bool songA, songB, songC; //is song playing?
 //SMoothing
 //int sum = 0 ;
 const int numReadings = 5;
-int readings1[numReadings];      // the readings from the analog input
-int readIndex1 = 0;              // the index of the current reading
-int total1 = 0;                  // the running total
-int average1 = 0;                // the average
-int count01 = 0;                    //discard first n readings
 
 int readings2[numReadings];      // the readings from the analog input
 int readIndex2 = 0;              // the index of the current reading
 int total2 = 0;                  // the running total
 int average2 = 0;                // the average
 int count02 = 0;                    //discard first n readings
+long unsigned lastSeen;
 
 #include "beaconFunctions.h" ///all NRF functions 
 
@@ -78,9 +75,6 @@ void setup() {
 
   //Smoothing
   for (int thisReading = 0; thisReading < numReadings; thisReading++) {
-    readings1[thisReading] = 0;
-  }
-  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
     readings2[thisReading] = 0;
   }
 
@@ -91,9 +85,14 @@ void setup() {
 void loop() {
   unsigned long currentMillis = millis();
 
-  if (currentMillis - previousMillis >= interval) { // Broadcasting interval
+  if (millis() - previousMillis >= interval) { // Broadcasting interval
     previousMillis = currentMillis;
     channel_hop();
+
+    if (millis() - lastSeen > 1000){
+      //Serial.println("dead!");
+      //do soemthing here when beacon goes offline
+    }
   }
 
   serialEventListener(); //get events from serial
@@ -107,32 +106,15 @@ void processScan() {
     int id = getValue(inputString, '|', 1).toInt();
     int rssiAvg;
     switch (id) {
-      case 1:
-        beacon[1] = rssi;
-        rssi = avrg01(rssi);
-
-        //discard first 10 readings
-        count01++ ;
-        if (count01 > 5 && id != my_num)
-          validId = true;
-
-        break;
-
       case 2:
-        beacon[2] = rssi;
         rssi = avrg02(rssi);
 
         //discard first 10 readings and dont process my own signal!
         count02++ ;
-        if (count02 > 12 && id != my_num)
+        if (count02 > 10 && id != my_num)
           validId = true;
-
         break;
 
-      case 3:
-        beacon[3] = rssi;
-        validId = true;
-        break;
       default:
         break;
     }
@@ -142,6 +124,7 @@ void processScan() {
       if (DEBUG)
         Serial.print("["); Serial.print(id); Serial.print("]:"); Serial.println(rssi);
       player(rssi);
+      lastSeen = millis();
 
       validId = false;
     }
@@ -167,21 +150,21 @@ void serialEventListener() {
 void player(int t_rssi) {
   if (t_rssi > 43 && t_rssi <= 50) {
     if (!songA) {
-      Serial.print("first song");
+      Serial.println("==first song");
       sendCommand(CMD_PLAY_W_VOL, 0X1E03);//play the "3" song with volume 30 class
       digitalWrite(9, HIGH);
       songA = true;
     }
   } else if (t_rssi > 50 && t_rssi <= 60) {
     if (!songB) {
-      Serial.print("second song");
+      Serial.println("==second song");
       sendCommand(CMD_PLAY_W_VOL, 0X1E02);//play the "2" song with volume 30 class
       digitalWrite(9, LOW);
       songB = true;
     }
   } else if (t_rssi > 60 && t_rssi <= 75) {
     if (!songC) {
-      Serial.print("third song");
+      Serial.println("==third song");
       sendCommand(CMD_PLAY_W_VOL, 0X1E01);//play the "1" song with volume 30 class
       digitalWrite(9, LOW);
       songC = true;
@@ -211,16 +194,6 @@ void sendCommand(int8_t command, int16_t dat)
   }
 }
 
-int avrg01(int input) {
-  total1 = total1 - readings1[readIndex1];
-  readings1[readIndex1] = input;
-  total1 = total1 + readings1[readIndex1];
-  readIndex1 = readIndex1 + 1;
-  if (readIndex1 >= numReadings)
-    readIndex1 = 0;
-  average1 = total1 / numReadings;
-  return average1;
-}
 
 int avrg02(int input) {
   total2 = total2 - readings2[readIndex2];

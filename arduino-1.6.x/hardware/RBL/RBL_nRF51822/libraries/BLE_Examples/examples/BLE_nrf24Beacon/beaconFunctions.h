@@ -143,60 +143,62 @@ void initNRF() {
 
 // Channel hopping
 void channel_hop() {
-  for (ch = 0; ch < sizeof(chRf); ch++)
-  {
-    uint8_t i, L = 0;
+  //for (ch = 0; ch < sizeof(chRf); ch++)
+  //for (ch = 0; ch < sizeof(chRf); ch++)
+  //{
+  int ch = 0;
+  uint8_t i, L = 0;
 
-    buf[L++] = 0x42;  //PDU type, given address is random; 0x42 for Android and 0x40 for iPhone
-    buf[L++] = 16 + 4; // length of payload
+  buf[L++] = 0x42;  //PDU type, given address is random; 0x42 for Android and 0x40 for iPhone
+  buf[L++] = 16 + 4; // length of payload
 
-    buf[L++] = MY_MAC_0;
-    buf[L++] = MY_MAC_1;
-    buf[L++] = MY_MAC_2;
-    buf[L++] = MY_MAC_3;
-    buf[L++] = MY_MAC_4;
-    buf[L++] = MY_MAC_5;
+  buf[L++] = MY_MAC_0;
+  buf[L++] = MY_MAC_1;
+  buf[L++] = MY_MAC_2;
+  buf[L++] = MY_MAC_3;
+  buf[L++] = MY_MAC_4;
+  buf[L++] = MY_MAC_5;
 
-    buf[L++] = 2;   //flags (LE-only, limited discovery mode)
-    buf[L++] = 0x01;
-    buf[L++] = 0x05;
+  buf[L++] = 2;   //flags (LE-only, limited discovery mode)
+  buf[L++] = 0x01;
+  buf[L++] = 0x05;
 
-    buf[L++] = 6;   // length of the name, including type byte
-    buf[L++] = 0x08;
-    buf[L++] = '0';
-    buf[L++] = '0';
-    buf[L++] = '0';
-    buf[L++] = '0';
-    buf[L++] = my_num; //chnage this for name
+  buf[L++] = 6;   // length of the name, including type byte
+  buf[L++] = 0x08;
+  buf[L++] = '0';
+  buf[L++] = '0';
+  buf[L++] = '0';
+  buf[L++] = '0';
+  buf[L++] = '1'; //chnage this for name
 
 
-    buf[L++] = 3;   // length of custom data, including type byte
-    buf[L++] = 0xff;
-    //this 2 bytes can be changed to anything else
-    buf[L++] = 0x01;
-    buf[L++] = 0x02;  // some test data
+  buf[L++] = 3;   // length of custom data, including type byte
+  buf[L++] = 0xff;
+  //this 2 bytes can be changed to anything else
+  buf[L++] = 0x01;
+  buf[L++] = 0x02;  // some test data
 
-    buf[L++] = 0x55;  //CRC start value: 0x555555
-    buf[L++] = 0x55;
-    buf[L++] = 0x55;
+  buf[L++] = 0x55;  //CRC start value: 0x555555
+  buf[L++] = 0x55;
+  buf[L++] = 0x55;
 
-    nrf_cmd(0x25, chRf[ch]);
-    nrf_cmd(0x27, 0x6E);  // Clear flags
+  nrf_cmd(0x25, chRf[ch]);
+  nrf_cmd(0x27, 0x6E);  // Clear flags
 
-    btLePacketEncode(buf, L, chLe[ch]);
-    nrf_simplebyte(0xE2); //Clear RX Fifo
-    nrf_simplebyte(0xE1); //Clear TX Fifo
+  btLePacketEncode(buf, L, chLe[ch]);
+  nrf_simplebyte(0xE2); //Clear RX Fifo
+  nrf_simplebyte(0xE1); //Clear TX Fifo
 
-    digitalWrite(PIN_CSN, LOW);
-    spi_byte(0xA0);
-    for (i = 0 ; i < L ; i++) spi_byte(buf[i]);
-    digitalWrite(PIN_CSN, HIGH);
+  digitalWrite(PIN_CSN, LOW);
+  spi_byte(0xA0);
+  for (i = 0 ; i < L ; i++) spi_byte(buf[i]);
+  digitalWrite(PIN_CSN, HIGH);
 
-    nrf_cmd(0x20, 0x12);  // TX on
-    digitalWrite(PIN_CE, HIGH); // Enable Chip
-    delay(2);        //
-    digitalWrite(PIN_CE, LOW);   // (in preparation of switching to RX quickly)
-  }
+  nrf_cmd(0x20, 0x12);  // TX on
+  digitalWrite(PIN_CE, HIGH); // Enable Chip
+  delay(2);        //
+  digitalWrite(PIN_CE, LOW);   // (in preparation of switching to RX quickly)
+  //}
 }
 
 
