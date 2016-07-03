@@ -1,12 +1,8 @@
 //http://doc.lijun.li/misc-nrf24-ble.html
 // Inspired by http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery
 
-#include "SPI.h"  // SPI in Arduino Uno/Nano: MOSI pin 11, MISO pin 12, SCK pin 13
-#define PIN_CE  10 // chip enable
-#define PIN_CSN 9   // chip select (for SPI)
-
-
-#define my_num   '2'
+//this is the ID the beacon will transmit, keep it a number
+int my_num = 2 ;
 
 // The MAC address of BLE advertizer -- just make one up
 #define MY_MAC_0  0xa1
@@ -16,67 +12,128 @@
 #define MY_MAC_4  0x55
 #define MY_MAC_5  0xf7
 
+#include "SPI.h"  // SPI in Arduino Uno/Nano: MOSI pin 11, MISO pin 12, SCK pin 13
+#define PIN_CE  10 // chip enable
+#define PIN_CSN 9   // chip select (for SPI)
 
-#include "funcs.h" ///all NRF functions 
 
 #include "SoftwareSerial.h"
 SoftwareSerial mySerial(8, 7); //RX,TX
-String inputString = "";         // a string to hold incoming data
+static int8_t Send_buf[8] = {0} ;
+
+
 int beacon[3] = {0, 0, 0};
 bool gotBeacon = false;  // whether the string is complete
 bool validId = false;
+String inputString = "";         // a string to hold incoming data
+
+/// MP3 commands
+#define CMD_SEL_DEV 0X09
+#define DEV_TF 0X02
+#define CMD_PLAY_W_VOL 0X22
+#define CMD_PLAY 0X0D
+#define CMD_PAUSE 0X0E
+#define CMD_PREVIOUS 0X02
+#define CMD_NEXT 0X01
+
+
+//SMoothing
+//int sum = 0 ;
+const int numReadings = 5;
+int readings1[numReadings];      // the readings from the analog input
+int readIndex1 = 0;              // the index of the current reading
+int total1 = 0;                  // the running total
+int average1 = 0;                // the average
+
+int readings2[numReadings];      // the readings from the analog input
+int readIndex2 = 0;              // the index of the current reading
+int total2 = 0;                  // the running total
+int average2 = 0;                // the average
+
+
+#include "beaconFunctions.h" ///all NRF functions 
 
 unsigned long previousMillis = 0;
 const long interval = 500;
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("restart serial");
-
+  Serial.println("-restart serial");
 
   mySerial.begin(9600); //serial with only RX pin
   inputString.reserve(50);
   mySerial.println("restart");
 
-  pinMode(PIN_CSN, OUTPUT);
-  pinMode(PIN_CE, OUTPUT);
-  pinMode(11, OUTPUT);
-  pinMode(13, OUTPUT);
-  digitalWrite(PIN_CSN, HIGH);
-  digitalWrite(PIN_CE, LOW);
+  //send comm to MP3 module
+  sendCommand(CMD_SEL_DEV, DEV_TF);//select the TF card
+  delay(200);//wait for 200ms
 
-  SPI.begin();
-  SPI.setBitOrder(MSBFIRST);
+  //LED setup
+  pinMode(9, OUTPUT);
+  digitalWrite(9, LOW);
 
+  //Smoothing
+  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+    readings1[thisReading] = 0;
+  }
+  for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+    readings2[thisReading] = 0;
+  }
+
+  //init beacon
   initNRF();
-
-
-
 }
 
 void loop() {
   unsigned long currentMillis = millis();
+
   if (currentMillis - previousMillis >= interval) { // Broadcasting interval
     previousMillis = currentMillis;
     channel_hop();
   }
-  processScan();
+
+  serialEventListener(); //get events from serial
+  processScan(); //process complete messages from serial
 }
 
 void processScan() {
   if (gotBeacon) {
     int rssi = getValue(inputString, '|', 0).toInt();
     int id = getValue(inputString, '|', 1).toInt();
-
+  int rssiAvg;
     switch (id) {
       case 1:
         beacon[1] = rssi;
+
+        total1 = total1 - readings1[readIndex1];
+        readings1[readIndex1] = rssi;
+        total1 = total1 + readings1[readIndex1];
+        readIndex1 = readIndex1 + 1;
+        if (readIndex1 >= numReadings) {
+          readIndex1 = 0;
+        }
+        average1 = total1 / numReadings;
+        rssiAvg = average1;
+
         validId = true;
         break;
+        
       case 2:
         beacon[2] = rssi;
+
+        total2 = total2 - readings2[readIndex2];
+        readings2[readIndex2] = rssi;
+        total2 = total2 + readings2[readIndex2];
+        readIndex2 = readIndex2 + 1;
+        if (readIndex2 >= numReadings) {
+          readIndex2 = 0;
+        }
+        average2 = total2 / numReadings;
+        rssi = average2;
+
         validId = true;
         break;
+        
       case 3:
         beacon[3] = rssi;
         validId = true;
@@ -84,9 +141,14 @@ void processScan() {
       default:
         break;
     }
+    
     if (validId) {
-      Serial.print("["); Serial.print(id);
-      Serial.print("]:"); Serial.println(rssi);
+      // dont print my own id!
+      if (id != my_num) {
+        Serial.print("["); Serial.print(id);
+        Serial.print("]:"); Serial.print(rssi);
+        Serial.print(":"); Serial.println(rssiAvg);
+      }
       validId = false;
     }
     // clear the string:
@@ -94,7 +156,6 @@ void processScan() {
     gotBeacon = false;
 
   }
-  serialEventListener();
 }
 
 void serialEventListener() {
@@ -108,22 +169,20 @@ void serialEventListener() {
   }
 }
 
-String getValue(String data, char separator, int index)
+
+void sendCommand(int8_t command, int16_t dat)
 {
-  int found = 0;
-  int strIndex[] = {
-    0, -1
-  };
-  int maxIndex = data.length() - 1;
-  for (int i = 0; i <= maxIndex && found <= index; i++) {
-    if (data.charAt(i) == separator || i == maxIndex) {
-      found++;
-      strIndex[0] = strIndex[1] + 1;
-      strIndex[1] = (i == maxIndex) ? i + 1 : i;
-    }
+  delay(20);
+  Send_buf[0] = 0x7e; //starting byte
+  Send_buf[1] = 0xff; //version
+  Send_buf[2] = 0x06; //the number of bytes of the command without starting byte and ending byte
+  Send_buf[3] = command; //
+  Send_buf[4] = 0x00;//0x00 = no feedback, 0x01 = feedback
+  Send_buf[5] = (int8_t)(dat >> 8);//datah
+  Send_buf[6] = (int8_t)(dat); //datal
+  Send_buf[7] = 0xef; //ending byte
+  for (uint8_t i = 0; i < 8; i++) //
+  {
+    mySerial.write(Send_buf[i]) ;
   }
-  return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
-
-
-

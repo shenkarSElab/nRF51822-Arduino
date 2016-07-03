@@ -105,6 +105,16 @@ void nrf_manybytes(uint8_t* data, uint8_t len) {
 
 void initNRF() {
 
+  pinMode(PIN_CSN, OUTPUT);
+  pinMode(PIN_CE, OUTPUT);
+  pinMode(11, OUTPUT);
+  pinMode(13, OUTPUT);
+  digitalWrite(PIN_CSN, HIGH);
+  digitalWrite(PIN_CE, LOW);
+
+  SPI.begin();
+  SPI.setBitOrder(MSBFIRST);
+
   // Now initialize nRF24L01+, setting general parameters
   nrf_cmd(0x20, 0x12);  //on, no crc, int on RX/TX done
   nrf_cmd(0x21, 0x00);  //no auto-acknowledge
@@ -189,3 +199,20 @@ void channel_hop() {
   }
 }
 
+
+String getValue(String data, char separator, int index)
+{
+  int found = 0;
+  int strIndex[] = {
+    0, -1
+  };
+  int maxIndex = data.length() - 1;
+  for (int i = 0; i <= maxIndex && found <= index; i++) {
+    if (data.charAt(i) == separator || i == maxIndex) {
+      found++;
+      strIndex[0] = strIndex[1] + 1;
+      strIndex[1] = (i == maxIndex) ? i + 1 : i;
+    }
+  }
+  return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
+}
