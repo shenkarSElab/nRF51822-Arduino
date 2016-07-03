@@ -1,6 +1,8 @@
 //http://doc.lijun.li/misc-nrf24-ble.html
 // Inspired by http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery
 
+#define DEBUG 1
+
 //this is the ID the beacon will transmit, keep it a number
 int my_num = 2 ;
 
@@ -35,7 +37,7 @@ String inputString = "";         // a string to hold incoming data
 #define CMD_PAUSE 0X0E
 #define CMD_PREVIOUS 0X02
 #define CMD_NEXT 0X01
-
+bool songA, songB, songC; //is song playing?
 
 //SMoothing
 //int sum = 0 ;
@@ -44,13 +46,13 @@ int readings1[numReadings];      // the readings from the analog input
 int readIndex1 = 0;              // the index of the current reading
 int total1 = 0;                  // the running total
 int average1 = 0;                // the average
-int count01;                      //discard first n readings
+int count01 = 0;                    //discard first n readings
 
 int readings2[numReadings];      // the readings from the analog input
 int readIndex2 = 0;              // the index of the current reading
 int total2 = 0;                  // the running total
 int average2 = 0;                // the average
-int count02;                      //discard first n readings
+int count02 = 0;                    //discard first n readings
 
 #include "beaconFunctions.h" ///all NRF functions 
 
@@ -58,12 +60,13 @@ unsigned long previousMillis = 0;
 const long interval = 500;
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println("-restart serial");
+  if (DEBUG) {
+    Serial.begin(9600);
+    Serial.println("-restart serial");
+  }
 
-  mySerial.begin(9600); //serial with only RX pin
+  mySerial.begin(9600);
   inputString.reserve(50);
-  mySerial.println("restart");
 
   //send comm to MP3 module
   sendCommand(CMD_SEL_DEV, DEV_TF);//select the TF card
@@ -106,40 +109,22 @@ void processScan() {
     switch (id) {
       case 1:
         beacon[1] = rssi;
-
-        total1 = total1 - readings1[readIndex1];
-        readings1[readIndex1] = rssi;
-        total1 = total1 + readings1[readIndex1];
-        readIndex1 = readIndex1 + 1;
-        if (readIndex1 >= numReadings) {
-          readIndex1 = 0;
-        }
-        average1 = total1 / numReadings;
-        rssi = average1;
+        rssi = avrg01(rssi);
 
         //discard first 10 readings
         count01++ ;
-        if (count01 > 10)
+        if (count01 > 5 && id != my_num)
           validId = true;
 
         break;
 
       case 2:
         beacon[2] = rssi;
-
-        total2 = total2 - readings2[readIndex2];
-        readings2[readIndex2] = rssi;
-        total2 = total2 + readings2[readIndex2];
-        readIndex2 = readIndex2 + 1;
-        if (readIndex2 >= numReadings) {
-          readIndex2 = 0;
-        }
-        average2 = total2 / numReadings;
-        rssi = average2;
+        rssi = avrg02(rssi);
 
         //discard first 10 readings and dont process my own signal!
         count02++ ;
-        if (count02 > 10 || id != my_num)
+        if (count02 > 12 && id != my_num)
           validId = true;
 
         break;
@@ -153,8 +138,10 @@ void processScan() {
     }
 
     if (validId) {
-      Serial.print("["); Serial.print(id);
-      Serial.print("]:"); Serial.println(rssi);
+      //process it!
+      if (DEBUG)
+        Serial.print("["); Serial.print(id); Serial.print("]:"); Serial.println(rssi);
+      player(rssi);
 
       validId = false;
     }
@@ -177,6 +164,36 @@ void serialEventListener() {
 }
 
 
+void player(int t_rssi) {
+  if (t_rssi > 43 && t_rssi <= 50) {
+    if (!songA) {
+      Serial.print("first song");
+      sendCommand(CMD_PLAY_W_VOL, 0X1E03);//play the "3" song with volume 30 class
+      digitalWrite(9, HIGH);
+      songA = true;
+    }
+  } else if (t_rssi > 50 && t_rssi <= 60) {
+    if (!songB) {
+      Serial.print("second song");
+      sendCommand(CMD_PLAY_W_VOL, 0X1E02);//play the "2" song with volume 30 class
+      digitalWrite(9, LOW);
+      songB = true;
+    }
+  } else if (t_rssi > 60 && t_rssi <= 75) {
+    if (!songC) {
+      Serial.print("third song");
+      sendCommand(CMD_PLAY_W_VOL, 0X1E01);//play the "1" song with volume 30 class
+      digitalWrite(9, LOW);
+      songC = true;
+    }
+  } else if (t_rssi <= 43 || t_rssi > 75) {
+    songA = false;
+    songB = false;
+    songC = false;
+    Serial.println("reset songs");
+  }
+}
+
 void sendCommand(int8_t command, int16_t dat)
 {
   delay(20);
@@ -192,4 +209,26 @@ void sendCommand(int8_t command, int16_t dat)
   {
     mySerial.write(Send_buf[i]) ;
   }
+}
+
+int avrg01(int input) {
+  total1 = total1 - readings1[readIndex1];
+  readings1[readIndex1] = input;
+  total1 = total1 + readings1[readIndex1];
+  readIndex1 = readIndex1 + 1;
+  if (readIndex1 >= numReadings)
+    readIndex1 = 0;
+  average1 = total1 / numReadings;
+  return average1;
+}
+
+int avrg02(int input) {
+  total2 = total2 - readings2[readIndex2];
+  readings2[readIndex2] = input;
+  total2 = total2 + readings2[readIndex2];
+  readIndex2 = readIndex2 + 1;
+  if (readIndex2 >= numReadings)
+    readIndex2 = 0;
+  average2 = total2 / numReadings;
+  return average2;
 }
