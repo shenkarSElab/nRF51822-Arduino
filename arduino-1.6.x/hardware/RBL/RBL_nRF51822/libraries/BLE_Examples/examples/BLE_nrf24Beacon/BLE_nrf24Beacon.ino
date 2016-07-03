@@ -44,12 +44,13 @@ int readings1[numReadings];      // the readings from the analog input
 int readIndex1 = 0;              // the index of the current reading
 int total1 = 0;                  // the running total
 int average1 = 0;                // the average
+int count01;                      //discard first n readings
 
 int readings2[numReadings];      // the readings from the analog input
 int readIndex2 = 0;              // the index of the current reading
 int total2 = 0;                  // the running total
 int average2 = 0;                // the average
-
+int count02;                      //discard first n readings
 
 #include "beaconFunctions.h" ///all NRF functions 
 
@@ -96,11 +97,12 @@ void loop() {
   processScan(); //process complete messages from serial
 }
 
+
 void processScan() {
   if (gotBeacon) {
     int rssi = getValue(inputString, '|', 0).toInt();
     int id = getValue(inputString, '|', 1).toInt();
-  int rssiAvg;
+    int rssiAvg;
     switch (id) {
       case 1:
         beacon[1] = rssi;
@@ -113,11 +115,15 @@ void processScan() {
           readIndex1 = 0;
         }
         average1 = total1 / numReadings;
-        rssiAvg = average1;
+        rssi = average1;
 
-        validId = true;
+        //discard first 10 readings
+        count01++ ;
+        if (count01 > 10)
+          validId = true;
+
         break;
-        
+
       case 2:
         beacon[2] = rssi;
 
@@ -131,9 +137,13 @@ void processScan() {
         average2 = total2 / numReadings;
         rssi = average2;
 
-        validId = true;
+        //discard first 10 readings and dont process my own signal!
+        count02++ ;
+        if (count02 > 10 || id != my_num)
+          validId = true;
+
         break;
-        
+
       case 3:
         beacon[3] = rssi;
         validId = true;
@@ -141,14 +151,11 @@ void processScan() {
       default:
         break;
     }
-    
+
     if (validId) {
-      // dont print my own id!
-      if (id != my_num) {
-        Serial.print("["); Serial.print(id);
-        Serial.print("]:"); Serial.print(rssi);
-        Serial.print(":"); Serial.println(rssiAvg);
-      }
+      Serial.print("["); Serial.print(id);
+      Serial.print("]:"); Serial.println(rssi);
+
       validId = false;
     }
     // clear the string:
