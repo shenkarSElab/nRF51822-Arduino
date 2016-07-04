@@ -18,7 +18,7 @@ const static int my_num = 1 ;
 #define PIN_CE  10 // chip enable
 #define PIN_CSN 9   // chip select (for SPI)
 
-#define LEDPIN 3
+#define LEDPIN 6
 
 
 #include "SoftwareSerial.h"
@@ -39,7 +39,7 @@ String inputString = "";         // a string to hold incoming data
 #define CMD_PAUSE 0X0E
 #define CMD_PREVIOUS 0X02
 #define CMD_NEXT 0X01
-bool songA, songB, songC; //is song playing?
+int song; //is song playing?
 
 //SMoothing
 //int sum = 0 ;
@@ -95,9 +95,7 @@ void loop() {
       Serial.println("dead!");
       firstSeen = false;
 
-      songA = false;
-      songB = false;
-      songC = false;
+      song = 0;
       //do soemthing here when beacon goes offline
     }
   }
@@ -119,8 +117,10 @@ void processScan() {
         //discard first 10 readings and dont process my own signal!
         count02++ ;
         if (count02 > 10 && id != my_num) {
-          if (DEBUG)
-            Serial.print("["); Serial.print(id); Serial.print("]:"); Serial.println(rssi);
+          if (DEBUG) {
+            Serial.print("["); Serial.print(id); Serial.print("]:"); Serial.print(rssi);
+            Serial.print(":S"); Serial.println(song);
+          }
           player(rssi);
           lastSeen = millis();
           firstSeen = true;
@@ -152,35 +152,32 @@ void serialEventListener() {
 
 void player(int t_rssi) {
   if (t_rssi > 44 && t_rssi <= 50) {
-    if (!songA) {
-      Serial.println("==first song");
+    if (song != 1) {
+      //Serial.println("==first song");
       sendCommand(CMD_PLAY_W_VOL, 0x1E01);//play the "1" song with volume 30 class
       digitalWrite(LEDPIN, HIGH);
-      songA = true;
+      song = 1;
     }
   } else if (t_rssi > 50 && t_rssi <= 60) {
-    if (!songB) {
-      Serial.println("==second song");
+    if (song != 2) {
+      // Serial.println("==second song");
       sendCommand(CMD_PLAY_W_VOL, 0x1E02);//play the "2" song with volume 30 class
       digitalWrite(LEDPIN, LOW);
-      songB = true;
+      song = 2;
     }
   } else if (t_rssi > 60 && t_rssi <= 75) {
-    if (!songC) {
-      Serial.println("==third song");
+    if (song != 3) {
+      // Serial.println("==third song");
       sendCommand(CMD_PLAY_W_VOL, 0x1E03);//play the "3" song with volume 30 class
       digitalWrite(LEDPIN, LOW);
-      songC = true;
+      song = 3;
     }
   } else if (t_rssi <= 44 || t_rssi > 75) {
-    songA = false;
-    songB = false;
-    songC = false;
+    song = 0;
     digitalWrite(LEDPIN, LOW);
-    Serial.println("no songs");
+    //Serial.println("no songs");
   }
 }
-
 void sendCommand(int8_t command, int16_t dat)
 {
   delay(20);
