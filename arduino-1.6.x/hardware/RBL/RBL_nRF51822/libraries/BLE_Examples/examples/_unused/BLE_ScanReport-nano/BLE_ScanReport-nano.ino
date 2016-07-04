@@ -2,44 +2,38 @@
 
 
 String inputString = "";         // a string to hold incoming data
-int beacon[3] = {0, 0, 0};
-bool gotBeacon = false;  // whether the string is complete
-bool validId = false;
+boolean gotBeacon = false;  // whether the string is complete
+
+//here we store our beacons. index is thier ID
+int beacon[] = {0, 0, 0}; //here we store the beacons
+boolean beaconAlive[] = {0, 0, 0}; //are we getting this beacon?
+int beaconArraySize = 3;
 
 void setup() {
   Serial.begin(9600);
   inputString.reserve(50);
-  Serial.println("restart");
 }
 
 void loop() {
   if (gotBeacon) {
-    //Serial.println(inputString);
     int rssi = getValue(inputString, '|', 0).toInt();
     int id = getValue(inputString, '|', 1).toInt();
-    //Serial.print("id:"); Serial.println(id);
+    //we store the beacon RSSI in an array
+    beacon[id] = rssi;
+    //this is live
+    beaconAlive[id] = true;
 
-    switch (id) {
-      case 1:
-        beacon[1] = rssi;
-        validId = true;
-        break;
-      case 2:
-        beacon[2] = rssi;
-        validId = true;
-        break;
-      default:
-        break;
-    }
-    if (validId) {
-      Serial.print("beacon["); Serial.print(id);
-      Serial.print("]:"); Serial.println(rssi);
-      validId = false;
-    }
-    // clear the string:
-    inputString = "";
-    gotBeacon = false;
+    for (int iii = 1; iii < beaconArraySize; iii++) {
+      if (beaconAlive[iii]) {
+        Serial.print("beacon["); Serial.print(iii); Serial.print("]:"); Serial.print(beacon[iii]); Serial.println();
+        //reset the alive switch
+        beaconAlive[iii] = false;
+      }
 
+      // clear the string:
+      inputString = "";
+      gotBeacon = false;
+    }
   }
 }
 
@@ -48,7 +42,7 @@ void serialEvent() {
   while (Serial.available()) {
     char inChar = (char)Serial.read();
     inputString += inChar;
-    if (inChar == '#') {
+    if (inChar == '\n') {
       gotBeacon = true;
     }
   }

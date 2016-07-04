@@ -18,6 +18,7 @@ const static int my_num = 1 ;
 #define PIN_CE  10 // chip enable
 #define PIN_CSN 9   // chip select (for SPI)
 
+#define LEDPIN 3
 
 
 #include "SoftwareSerial.h"
@@ -50,6 +51,7 @@ int total2 = 0;                  // the running total
 int average2 = 0;                // the average
 int count02 = 0;                    //discard first n readings
 long unsigned lastSeen;
+bool firstSeen;
 
 #include "beaconFunctions.h" ///all NRF functions 
 
@@ -59,7 +61,7 @@ const long interval = 500;
 void setup() {
   if (DEBUG) {
     Serial.begin(9600);
-    Serial.println("-restart serial");
+    Serial.print("restart, my id >> "); Serial.println(my_num);
   }
 
   mySerial.begin(9600);
@@ -70,8 +72,8 @@ void setup() {
   delay(200);//wait for 200ms
 
   //LED setup
-  pinMode(9, OUTPUT);
-  digitalWrite(9, LOW);
+  pinMode(LEDPIN, OUTPUT);
+  digitalWrite(LEDPIN, LOW);
 
   //Smoothing
   for (int thisReading = 0; thisReading < numReadings; thisReading++) {
@@ -89,8 +91,13 @@ void loop() {
     previousMillis = currentMillis;
     channel_hop();
 
-    if (millis() - lastSeen > 1000){
-      //Serial.println("dead!");
+    if ((millis() - lastSeen > 1000) && firstSeen) {
+      Serial.println("dead!");
+      firstSeen = false;
+
+      songA = false;
+      songB = false;
+      songC = false;
       //do soemthing here when beacon goes offline
     }
   }
@@ -104,30 +111,26 @@ void processScan() {
   if (gotBeacon) {
     int rssi = getValue(inputString, '|', 0).toInt();
     int id = getValue(inputString, '|', 1).toInt();
-    int rssiAvg;
+
     switch (id) {
       case 2:
         rssi = avrg02(rssi);
 
         //discard first 10 readings and dont process my own signal!
         count02++ ;
-        if (count02 > 10 && id != my_num)
-          validId = true;
+        if (count02 > 10 && id != my_num) {
+          if (DEBUG)
+            Serial.print("["); Serial.print(id); Serial.print("]:"); Serial.println(rssi);
+          player(rssi);
+          lastSeen = millis();
+          firstSeen = true;
+        }
         break;
 
       default:
         break;
     }
 
-    if (validId) {
-      //process it!
-      if (DEBUG)
-        Serial.print("["); Serial.print(id); Serial.print("]:"); Serial.println(rssi);
-      player(rssi);
-      lastSeen = millis();
-
-      validId = false;
-    }
     // clear the string:
     inputString = "";
     gotBeacon = false;
@@ -148,32 +151,33 @@ void serialEventListener() {
 
 
 void player(int t_rssi) {
-  if (t_rssi > 43 && t_rssi <= 50) {
+  if (t_rssi > 44 && t_rssi <= 50) {
     if (!songA) {
       Serial.println("==first song");
-      sendCommand(CMD_PLAY_W_VOL, 0X1E03);//play the "3" song with volume 30 class
-      digitalWrite(9, HIGH);
+      sendCommand(CMD_PLAY_W_VOL, 0x1E01);//play the "1" song with volume 30 class
+      digitalWrite(LEDPIN, HIGH);
       songA = true;
     }
   } else if (t_rssi > 50 && t_rssi <= 60) {
     if (!songB) {
       Serial.println("==second song");
-      sendCommand(CMD_PLAY_W_VOL, 0X1E02);//play the "2" song with volume 30 class
-      digitalWrite(9, LOW);
+      sendCommand(CMD_PLAY_W_VOL, 0x1E02);//play the "2" song with volume 30 class
+      digitalWrite(LEDPIN, LOW);
       songB = true;
     }
   } else if (t_rssi > 60 && t_rssi <= 75) {
     if (!songC) {
       Serial.println("==third song");
-      sendCommand(CMD_PLAY_W_VOL, 0X1E01);//play the "1" song with volume 30 class
-      digitalWrite(9, LOW);
+      sendCommand(CMD_PLAY_W_VOL, 0x1E03);//play the "3" song with volume 30 class
+      digitalWrite(LEDPIN, LOW);
       songC = true;
     }
-  } else if (t_rssi <= 43 || t_rssi > 75) {
+  } else if (t_rssi <= 44 || t_rssi > 75) {
     songA = false;
     songB = false;
     songC = false;
-    Serial.println("reset songs");
+    digitalWrite(LEDPIN, LOW);
+    Serial.println("no songs");
   }
 }
 
