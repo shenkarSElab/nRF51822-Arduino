@@ -2,6 +2,7 @@
 // Inspired by http://dmitry.gr/index.php?r=05.Projects&proj=11.%20Bluetooth%20LE%20fakery
 
 #define DEBUG 1
+#include <math.h> //http://sean.voisen.org/blog/2011/10/breathing-led-with-arduino/
 
 //this is the ID the beacon will transmit, keep it a number
 const static int my_num = 1 ;
@@ -155,7 +156,9 @@ void player(int t_rssi) {
     if (song != 1) {
       //Serial.println("==first song");
       sendCommand(CMD_PLAY_W_VOL, 0x1E01);//play the "1" song with volume 30 class
-      digitalWrite(LEDPIN, HIGH);
+      //breathing led
+      float val = (exp(sin(millis() / 2000.0 * PI)) - 0.36787944) * 108.0;
+      analogWrite(LEDPIN, val);      
       song = 1;
     }
   } else if (t_rssi > 50 && t_rssi <= 60) {
